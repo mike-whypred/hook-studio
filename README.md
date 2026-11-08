@@ -20,3 +20,19 @@ vercel env pull .env.local --yes
 node --env-file=.env.local scripts/migrate.mjs   # once
 npm run dev
 ```
+
+## Deploy on your own Vercel
+
+You need accounts on Vercel, Stripe and the Claude Developer Platform. Install the Vercel CLI (`npm i -g vercel@latest`) and run `vercel login`.
+
+1. **Install and link.** In this folder: `npm install`, then `vercel link` and choose to create a new project.
+2. **Database and login.** Run `vercel integration add neon`. This sets `DATABASE_URL` and `NEON_AUTH_BASE_URL`. If `NEON_AUTH_BASE_URL` is missing from `vercel env ls`, turn on Auth for the database in the Neon console and copy its URL in.
+3. **Stripe plan.** In Stripe, create a product with a monthly recurring price and copy its `price_...` id.
+4. **Secrets.** Add each one for production, preview and development (`vercel env add NAME production`, and so on). See `.env.example`:
+   `NEON_AUTH_COOKIE_SECRET` (`openssl rand -base64 32`), `ANTHROPIC_API_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`. Set `PLAN_PRICE_LABEL` if the price isn't $19.
+5. **Create the tables.** Run `vercel env pull .env.local --yes`, then `node --env-file=.env.local scripts/migrate.mjs`.
+6. **Deploy.** Run `vercel deploy --prod`.
+7. **Stripe webhook.** In Stripe > Developers > Webhooks, add an endpoint at `https://<your-domain>/api/stripe/webhook` with these events: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `customer.subscription.paused`, `customer.subscription.resumed`, `invoice.paid`, `invoice.payment_failed`. Add its signing secret as `STRIPE_WEBHOOK_SECRET`, then run `vercel deploy --prod` again.
+8. **Billing portal.** In Stripe > Settings > Billing > Customer portal, turn the portal on so the studio's Billing button works.
+
+Test first with Stripe test-mode keys and card `4242 4242 4242 4242`, then switch to live keys.
