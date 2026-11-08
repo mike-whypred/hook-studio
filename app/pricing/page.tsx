@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { currentUser } from "@/lib/auth/server";
 import { hasAccess } from "@/lib/billing";
@@ -11,7 +12,7 @@ export default async function Pricing() {
 
   return (
     <div className="wrap narrow" style={{ marginTop: 40 }}>
-      <h1>Hook Studio</h1>
+      <h1><Link href="/">Hook Studio</Link></h1>
       <p className="lead">One plan with everything in it.</p>
       <div className="card-s">
         <h3>Creator</h3>
