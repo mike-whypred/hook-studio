@@ -9,9 +9,9 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.6.0",
     "@neondatabase/auth": "^0.6.0-beta",
     "@neondatabase/serverless": "^1.2.0",
-    "ai": "^7.0.165",
     "next": "16.4.5",
     "react": "19.3.0",
     "react-dom": "19.3.0",

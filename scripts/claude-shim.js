@@ -1,5 +1,5 @@
 /* Hook Studio on the web: stands in for the artifact runtime's claude.use().
-   "sample" calls our /api/sample route (Claude via Vercel AI Gateway).
+   "sample" calls our /api/sample route (Claude via the Anthropic SDK).
    "downloads" is not offered, so the app falls back to normal browser downloads. */
 window.claude = {
   async use(name) {

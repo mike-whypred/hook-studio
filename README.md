@@ -1,17 +1,17 @@
 # Hook Studio
 
-Hook Studio as a paid web app: Next.js on Vercel, Neon Postgres + Neon Auth for accounts, Stripe for subscriptions, Claude via Vercel AI Gateway for hooks, revisions and captions.
+Hook Studio as a paid web app: Next.js on Vercel, Neon Postgres + Neon Auth for accounts, Stripe for subscriptions, Claude via the Anthropic SDK for hooks, revisions and captions.
 
 ## How it fits together
 
 - `public/hook-studio.js`, `app/studio/markup.ts`, `app/studio/studio.css` are the original Hook Studio page, split out by `scripts/port-artifact.py`. The video work (preview, recording, zip) still runs entirely in the browser.
 - `scripts/claude-shim.js` (prepended to `hook-studio.js`) replaces the artifact runtime's `claude.use("sample")` with calls to `/api/sample`.
-- `/api/sample` checks the user is signed in and subscribed, applies a daily limit (`DAILY_AI_LIMIT`, default 300), and calls `AI_MODEL` (default `anthropic/claude-sonnet-5.5`).
+- `/api/sample` checks the user is signed in and subscribed, applies a daily limit (`DAILY_AI_LIMIT`, default 300), and calls Claude with `@anthropic-ai/sdk` (`ANTHROPIC_MODEL`, default `claude-opus-5-5`). We never use Vercel AI Gateway.
 - `/api/checkout`, `/api/portal`, `/api/stripe/webhook` handle the subscription. The webhook keeps the `subscriptions` table in sync.
 
 ## Env vars
 
-Set by the Neon integration: `DATABASE_URL`, `NEON_AUTH_BASE_URL`. Added by hand: `NEON_AUTH_COOKIE_SECRET`, `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`. Optional: `AI_MODEL`, `DAILY_AI_LIMIT`, `PLAN_PRICE_LABEL`, `APP_URL`.
+Set by the Neon integration: `DATABASE_URL`, `NEON_AUTH_BASE_URL`. Added by hand: `ANTHROPIC_API_KEY`, `NEON_AUTH_COOKIE_SECRET`, `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`. Optional: `ANTHROPIC_MODEL`, `DAILY_AI_LIMIT`, `PLAN_PRICE_LABEL`, `APP_URL`.
 
 ## Local dev
 
