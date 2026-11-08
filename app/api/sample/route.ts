@@ -1,8 +1,9 @@
-import { generateText } from "ai";
+import Anthropic from "@anthropic-ai/sdk";
 import { currentUser } from "@/lib/auth/server";
 import { hasAccess, takeAiCall } from "@/lib/billing";
 
-const MODEL = process.env.AI_MODEL ?? "anthropic/claude-sonnet-5.5";
+const client = new Anthropic(); // reads ANTHROPIC_API_KEY
+const MODEL = process.env.ANTHROPIC_MODEL ?? "claude-opus-5-5";
 const MAX_PROMPT = 24_000;
 
 /** Pull the first JSON array or object out of a model reply. */
@@ -34,15 +35,26 @@ export async function POST(req: Request) {
   if (!(await takeAiCall(user.id))) return Response.json({ error: "rate_limited" }, { status: 429 });
 
   try {
-    const { text } = await generateText({
-      model: MODEL,
-      instructions: "Reply with only valid JSON, no prose and no code fences.",
-      prompt,
-      abortSignal: req.signal,
-    });
+    const msg = await client.beta.messages.create(
+      {
+        model: MODEL,
+        max_tokens: 16000,
+        output_config: { effort: "medium" },
+        // If a safety check declines the request, the API retries it on a fallback model.
+        betas: ["server-side-fallback-2026-07-01"],
+        fallbacks: "default",
+        system: "Reply with only valid JSON, no prose and no code fences.",
+        messages: [{ role: "user", content: prompt }],
+      },
+      { signal: req.signal },
+    );
+    if (msg.stop_reason === "refusal") return Response.json({ result: null });
+    const text = msg.content.map((b) => (b.type === "text" ? b.text : "")).join("");
     return Response.json({ result: parseJson(text) });
   } catch (err) {
-    console.error("sample failed", err instanceof Error ? err.message : err);
+    if (err instanceof Anthropic.RateLimitError) return Response.json({ error: "rate_limited" }, { status: 429 });
+    if (err instanceof Anthropic.APIError) console.error("anthropic error", err.status, err.message);
+    else console.error("sample failed", err);
     return Response.json({ error: "ai_failed" }, { status: 502 });
   }
 }
