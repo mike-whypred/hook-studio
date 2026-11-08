@@ -14,13 +14,19 @@ export default function SignInForm({ initialMode }: { initialMode: "in" | "up" }
     const email = String(f.get("email")), password = String(f.get("password"));
     setBusy(true);
     setErr("");
-    const res =
-      mode === "in"
-        ? await authClient.signIn.email({ email, password })
-        : await authClient.signUp.email({ email, password, name: String(f.get("name") || email.split("@")[0]) });
+    let failed: string | null = null;
+    try {
+      const res =
+        mode === "in"
+          ? await authClient.signIn.email({ email, password })
+          : await authClient.signUp.email({ email, password, name: String(f.get("name") || email.split("@")[0]) });
+      if (res.error) failed = res.error.message || "That didn't work. Check your details and try again.";
+    } catch {
+      failed = "Couldn't reach the sign-in service. Try again in a moment.";
+    }
     setBusy(false);
-    if (res.error) {
-      setErr(res.error.message || "That didn't work. Check your details and try again.");
+    if (failed) {
+      setErr(failed);
       return;
     }
     const next = new URLSearchParams(location.search).get("next");
