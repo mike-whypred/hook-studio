@@ -1,69 +1,35 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+import { currentUser } from "@/lib/auth/server";
+import { hasAccess } from "@/lib/billing";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const user = await currentUser();
+  const paid = user ? await hasAccess(user.id) : false;
+  const cta = !user ? { href: "/sign-in", label: "Get started" } : paid ? { href: "/studio", label: "Open the studio" } : { href: "/pricing", label: "Choose a plan" };
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>
-            To get started, edit the{" "}
-            <code className={styles.code}>page.tsx</code> file.
-          </h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
+    <div className="wrap">
+      <div className="hero">
+        <h1>Hook Studio</h1>
+        <p className="lead">
+          Describe your video and Claude writes on-screen hooks in your tone. Pick the ones you like, choose looks, fonts and
+          variation tricks, and the app makes every version of your Reel right in your browser, with a fresh caption for each.
+        </p>
+        <div className="card-s">
+          <h3>How it works</h3>
+          <ul className="ticks">
+            <li>Add your video. It never leaves your browser.</li>
+            <li>Pick hooks from options Claude writes, or add your own.</li>
+            <li>Mix 37 text looks, 39 fonts, positions and tricks across versions.</li>
+            <li>Record every version and save them all as one zip.</li>
+            <li>Get a different caption for each post.</li>
+          </ul>
+          <a className="btn" href={cta.href} style={{ textDecoration: "none", display: "inline-block" }}>
+            {cta.label}
           </a>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
