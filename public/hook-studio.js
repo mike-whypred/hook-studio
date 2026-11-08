@@ -1,8 +1,23 @@
 /* Hook Studio on the web: stands in for the artifact runtime's claude.use().
    "sample" calls our /api/sample route (Claude via the Anthropic SDK).
-   "downloads" is not offered, so the app falls back to normal browser downloads. */
+   "downloads" saves files with a normal browser download. */
 window.claude = {
   async use(name) {
+    if (name === "downloads") {
+      return {
+        async save({ filename, data }) {
+          const blob = data instanceof Blob ? data : new Blob([data]);
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 60_000);
+        },
+      };
+    }
     if (name !== "sample") {
       const e = new Error("not available");
       e.code = "not_declared";
