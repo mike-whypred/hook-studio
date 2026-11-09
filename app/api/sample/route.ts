@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { currentUser } from "@/lib/auth/server";
 import { hasAccess, takeAiCall } from "@/lib/billing";
+import { referenceBlock } from "@/lib/hook-references";
 
 const client = new Anthropic(); // reads ANTHROPIC_API_KEY
 const MODEL = process.env.ANTHROPIC_MODEL ?? "claude-opus-5-5";
@@ -28,9 +29,11 @@ export async function POST(req: Request) {
   if (!user) return Response.json({ error: "sign_in" }, { status: 401 });
   if (!(await hasAccess(user.id))) return Response.json({ error: "subscribe" }, { status: 402 });
 
-  const body = (await req.json().catch(() => null)) as { prompt?: unknown } | null;
-  const prompt = typeof body?.prompt === "string" ? body.prompt : "";
+  const body = (await req.json().catch(() => null)) as { prompt?: unknown; task?: unknown } | null;
+  let prompt = typeof body?.prompt === "string" ? body.prompt : "";
   if (!prompt || prompt.length > MAX_PROMPT) return Response.json({ error: "bad_prompt" }, { status: 400 });
+  // Hook writing gets a fresh sample of the team's masterlist hooks as reference.
+  if (body?.task === "hooks") prompt += await referenceBlock();
 
   if (!(await takeAiCall(user.id))) return Response.json({ error: "rate_limited" }, { status: 429 });
 
