@@ -32,7 +32,7 @@ function Hook({ look, lines }: { look: string; lines: string[] }) {
 const FAQ = [
   ["Do my videos get uploaded?", "No. Your video is previewed and recorded in your browser and saved straight to your computer. Only the description you type is sent to Claude to write hooks and captions."],
   ["What do I get at the end?", "One video file per version, with the hook burned in, plus a different caption for each post. Save them one by one or as a single zip."],
-  ["Does it work for TikTok too?", "Yes. Versions are 9:16 and the text stays clear of the areas Instagram and TikTok cover with buttons. The safe zone is shown while you edit."],
+  ["Does it work for TikTok too?", "Yes. Versions are 9:16 and the hook text stays clear of the areas Instagram and TikTok cover with buttons. The safe zone is shown while you edit."],
   ["Can I write my own hooks?", "Yes. Add your own lines alongside Claude's, edit any line before you approve it, and give feedback to get a new batch."],
   ["Can I cancel?", "Any time, from Billing in the studio. You keep access until the end of the period you paid for."],
 ];
@@ -59,7 +59,7 @@ export default async function Home() {
           <div>
             <h1>One video, ten different openings.</h1>
             <p>
-              Hook Studio writes the on-screen text for your Reel, gives every version its own look, and records them all in your
+              Hook Studio writes the on-screen hook text for your Reel, gives every version its own look, and records them all in your
               browser. Post them as trial reels and keep the one that stops the scroll.
             </p>
             <div className="lp-cta">
@@ -91,7 +91,7 @@ export default async function Home() {
           <ol className="lp-steps">
             <li>
               <h3>Describe the video</h3>
-              <p>Add the clip, say what happens in it, and pick the kind of text and tone you want.</p>
+              <p>Add the clip, say what happens in it, and pick the kind of hook text and tone you want.</p>
             </li>
             <li>
               <h3>Pick your hooks</h3>
@@ -99,7 +99,7 @@ export default async function Home() {
             </li>
             <li>
               <h3>Mix the looks</h3>
-              <p>Choose from 37 text looks and 39 fonts, plus positions, speed, zoom and mirroring. No two versions match.</p>
+              <p>Choose from 37 hook text looks and 39 fonts, plus positions, speed, zoom and mirroring. No two versions match.</p>
             </li>
             <li>
               <h3>Record and caption</h3>
@@ -122,7 +122,7 @@ export default async function Home() {
             </div>
             <div>
               <h3>Change it in plain words</h3>
-              <p>&ldquo;Text lower on version 2, no mirror, open on a different clip.&rdquo; Type it and the versions are remade.</p>
+              <p>&ldquo;Hook text lower on version 2, no mirror, open on a different clip.&rdquo; Type it and the versions are remade.</p>
             </div>
           </div>
         </section>

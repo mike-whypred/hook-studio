@@ -88,7 +88,7 @@ new ResizeObserver(fitAll).observe(document.body);
 
 /* ---------- stepper ---------- */
 function stepper(){
-  const names=["Video and text","Pick hooks","Look and tricks","Captions"];
+  const names=["Video and hook text","Pick hooks","Look and tricks","Captions"];
   $("#steps").innerHTML=names.map((n,i)=>{const k=i+1,done=k<S.step,dis=k>S.step&&!(k==2&&S.hooks.length)&&!(k==3&&S.picked.length)&&!(k==4&&S.picked.length);
     return`<button class="stp ${done?'done':''}" data-k="${k}" ${k==S.step?'aria-current="step"':''} ${dis?'disabled':''}><i>${done?"✓":k}</i>${n}</button>`}).join("");
   document.querySelectorAll(".stp").forEach(b=>b.addEventListener("click",()=>go(+b.dataset.k)));
@@ -462,7 +462,7 @@ function setup3(){
     w.innerHTML=`<header><strong>${o.t}</strong><span class="tag ${o.scope}">${o.scope=="whole"?"whole video":"opening only"}</span></header><small>${o.d}</small><div class="chips" id="tr_${k}"></div>`;tb.appendChild(w);
     chipSet(w.querySelector(".chips"),o.vals.map(v=>[o.lab(v),v]),P[k],()=>{assign(true);render3()})});
   const m=document.createElement("div");m.className="trick";
-  m.innerHTML=`<header><strong>Mirror video</strong><span class="tag whole">whole video</span></header><small>Flips the picture. The text stays readable.</small><div class="chips" id="tr_mirror"></div>`;tb.appendChild(m);
+  m.innerHTML=`<header><strong>Mirror video</strong><span class="tag whole">whole video</span></header><small>Flips the picture. The hook text stays readable.</small><div class="chips" id="tr_mirror"></div>`;tb.appendChild(m);
   [["Off","off"],["Some versions","mix"],["Every version","all"]].forEach(([l,v])=>{const b=document.createElement("button");b.className="chip";b.textContent=l;b.dataset.v=v;b.setAttribute("aria-pressed",P.mirror==v);
     b.addEventListener("click",()=>{P.mirror=v;m.querySelectorAll(".chip").forEach(x=>x.setAttribute("aria-pressed",x.dataset.v==v));assign(true);render3()});m.querySelector(".chips").appendChild(b)});
   const nt=document.createElement("div");nt.className="trick off";nt.innerHTML=`<header><strong>Not in the app yet</strong></header><small>${NOTYET.join(", ")}. Coming soon.</small>`;tb.appendChild(nt);
@@ -493,7 +493,7 @@ function render3(){
     const cv=b.querySelector("canvas"),x=cv.getContext("2d");x.clearRect(0,0,540,260);
     x.save();x.translate(-27,0);x.scale(.55,.55);x.drawImage(bgFrame(1080,480,235),0,0);drawHook(x,+b.dataset.id,L.length?L:["your hook here"],c.font,40,Math.min(S.size/100,1),c.color);x.restore()});
   $("#sout").textContent=S.size+"%";
-  $("#durnote").textContent=S.dur=="whole"?"The text stays on screen for the whole video.":"The text is on screen from the first frame and leaves after about 3 seconds. It never fades in.";
+  $("#durnote").textContent=S.dur=="whole"?"The hook text stays on screen for the whole video.":"The hook text is on screen from the first frame and leaves after about 3 seconds. It never fades in.";
   $("#plan").innerHTML=`<thead><tr><th>#</th><th>Look</th><th>Colour</th><th>Font</th><th>Height</th><th>Speed</th><th>Bright</th><th>Mirror</th><th>Zoom</th><th>Cut</th><th>Opens on</th></tr></thead><tbody>`+
    S.cfg.map((v,i)=>`<tr data-i="${i}" ${i==S.cur?'class="cur"':""}><td>${i+1}</td><td>${styleName(v.style)}</td><td>${v.style>=13||v.style==11||v.style==12?(v.style>=13?COLORS[v.color||"white"][0]:(v.style==12?"White, black outline":"White")):"own"}</td><td>${v.style>=13?"in the look":FONTS[v.font||STYLE_FONT[v.style]].n}</td><td>${v.y}</td><td>${v.speed}x</td><td>${fmtBright(v.bright)}</td><td>${v.mirror?"yes":"no"}</td><td>${v.zoom>1?(MOTL[v.mot||"out"]||"Slow zoom out")+" "+v.zoom+"x":"none"}</td><td>${v.cut?v.cut+"s":"none"}</td><td>${v.open?"clip "+(v.open.clip+1)+" ("+v.open.t0+"s)":"first clip"}</td></tr>`).join("")+"</tbody>";
   document.querySelectorAll("#plan tbody tr").forEach(r=>r.addEventListener("click",()=>{S.cur=+r.dataset.i;render3()}));
