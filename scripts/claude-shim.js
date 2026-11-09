@@ -30,7 +30,7 @@ window.claude = {
           res = await fetch("/api/sample", {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ prompt }),
+            body: JSON.stringify({ prompt, task: opts.task }),
             signal: opts.signal,
           });
         } catch (err) {
