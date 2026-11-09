@@ -30,7 +30,7 @@ window.claude = {
           res = await fetch("/api/sample", {
             method: "POST",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ prompt }),
+            body: JSON.stringify({ prompt, task: opts.task }),
             signal: opts.signal,
           });
         } catch (err) {
@@ -154,7 +154,7 @@ async function generate(){
   $("#more").disabled=true;$("#stop").hidden=false;
   ctl=new AbortController();
   try{
-    const arr=await sampleFn.json(promptText(),{modelTier:"default",signal:ctl.signal,cache:false});
+    const arr=await sampleFn.json(promptText(),{modelTier:"default",signal:ctl.signal,cache:false,task:"hooks"});
     if(Array.isArray(arr))addHooks(arr.map(x=>typeof x=="string"?x:(x&&x.text)||""));
     $("#gstat").className="note";$("#gstat").textContent=Array.isArray(arr)?"":"Claude's reply was not a list. Try again.";
   }catch(e){
