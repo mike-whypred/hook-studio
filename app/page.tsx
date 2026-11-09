@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { currentUser } from "@/lib/auth/server";
 import { hasAccess } from "@/lib/billing";
+import { PLAN_FEATURES, PLAN_NAME, PLAN_PRICE as PRICE } from "@/lib/plan";
 import "./landing.css";
 
 export const dynamic = "force-dynamic";
-
-const PRICE = process.env.PLAN_PRICE_LABEL ?? "$19";
 
 function Screen({ children }: { children: React.ReactNode }) {
   return (
@@ -136,13 +135,12 @@ export default async function Home() {
               </p>
             </div>
             <div className="lp-plan">
-              <h3>Creator</h3>
+              <h3>{PLAN_NAME}</h3>
               <p className="lp-amount">{PRICE} <small>/ month</small></p>
               <ul>
-                <li>Unlimited videos and versions</li>
-                <li>Hooks, revisions and captions by Claude</li>
-                <li>All 37 looks and 39 fonts</li>
-                <li>Download every version as one zip</li>
+                {PLAN_FEATURES.map((f) => (
+                  <li key={f}>{f}</li>
+                ))}
               </ul>
               <a className="btn" href={start}>{paid ? "Open the studio" : "Subscribe"}</a>
             </div>
