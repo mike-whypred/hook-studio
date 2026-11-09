@@ -4,7 +4,7 @@ Hook Studio as a paid web app: Next.js on Vercel, Neon Postgres + Neon Auth for 
 
 ## How it fits together
 
-- `public/hook-studio.js`, `app/studio/markup.ts`, `app/studio/studio.css` are the original Hook Studio page, split out by `scripts/port-artifact.py`. The video work (preview, recording, zip) still runs entirely in the browser.
+- `public/hook-studio.js`, `app/studio/markup.ts`, `app/studio/studio.css` are the original Hook Studio page, split out of the original single-file app. The video work (preview, recording, zip) still runs entirely in the browser.
 - `scripts/claude-shim.js` (prepended to `hook-studio.js`) replaces the artifact runtime's `claude.use("sample")` with calls to `/api/sample`.
 - `/api/sample` checks the user is signed in and subscribed, applies a daily limit (`DAILY_AI_LIMIT`, default 300), and calls Claude with `@anthropic-ai/sdk` (`ANTHROPIC_MODEL`, default `claude-opus-5-5`). We never use Vercel AI Gateway.
 - `/api/checkout`, `/api/portal`, `/api/stripe/webhook` handle the subscription. The webhook keeps the `subscriptions` table in sync.
