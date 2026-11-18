@@ -154,9 +154,14 @@ async function generate(){
   $("#more").disabled=true;$("#stop").hidden=false;
   ctl=new AbortController();
   try{
-    const arr=await sampleFn.json(promptText(),{modelTier:"default",signal:ctl.signal,cache:false,task:"hooks"});
+    // One quiet retry: a single failed or garbled reply should not end the round.
+    const prompt=promptText();let arr;
+    for(let tries=0;;tries++){
+      try{arr=await sampleFn.json(prompt,{modelTier:"default",signal:ctl.signal,cache:false,task:"hooks"})}
+      catch(e){if(tries<1&&["error","network"].includes(e.code)){$("#gstat").textContent="Still writing options";continue}throw e}
+      break}
     if(Array.isArray(arr))addHooks(arr.map(x=>typeof x=="string"?x:(x&&x.text)||""));
-    $("#gstat").className="note";$("#gstat").textContent=Array.isArray(arr)?"":"Claude's reply was not a list. Try again.";
+    $("#gstat").className="note";$("#gstat").textContent=Array.isArray(arr)?"":"Claude didn't write hooks for this one. Try rewording the description, then press Write 10 more.";
   }catch(e){
     $("#gstat").className="note";
     if(e.code=="cancelled")$("#gstat").textContent="Stopped.";
