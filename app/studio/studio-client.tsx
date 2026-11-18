@@ -2,6 +2,7 @@
 import Script from "next/script";
 import SignOutButton from "../sign-out-button";
 import { STUDIO_MARKUP } from "./markup";
+import StudioTabs from "./tabs";
 
 /** The original Hook Studio page, unchanged, driven by public/hook-studio.js. */
 export default function StudioClient({
@@ -30,6 +31,9 @@ export default function StudioClient({
             Billing couldn&apos;t be opened just now. Please try again in a minute.
           </p>
         )}
+      </div>
+      <div className="wrap">
+        <StudioTabs current="make" />
       </div>
       <div dangerouslySetInnerHTML={{ __html: STUDIO_MARKUP }} />
       <Script src="/hook-studio.js" strategy="afterInteractive" />

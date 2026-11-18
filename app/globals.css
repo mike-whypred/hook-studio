@@ -23,3 +23,8 @@ ul.ticks{margin:12px 0 16px;padding-left:20px;line-height:1.7}
 .hero{max-width:640px;margin:40px auto 0;text-align:left}
 .hero h1{font-size:44px;margin-bottom:10px}
 .hero .lead{font-size:17px}
+
+/* Make versions / Analyse trial reels */
+.tabs{display:flex;gap:6px;margin:0 0 16px;border-bottom:1px solid var(--line)}
+.tabs a{padding:8px 12px;color:var(--muted);text-decoration:none;border-bottom:2px solid transparent;margin-bottom:-1px;font-weight:600;font-size:14px}
+.tabs a[aria-current=page]{color:var(--fg);border-bottom-color:var(--accent)}

@@ -27,6 +27,39 @@ await sql`create table if not exists hook_references (
   created_at timestamptz not null default now()
 )`;
 
+// Analyse tab: each user's Metricool connection (token encrypted by lib/metricool.ts),
+// how their reels are grouped by underlying video, and the last recommendation per group.
+await sql`create table if not exists metricool_connections (
+  user_id text primary key,
+  mc_user_id text not null,
+  token_enc text not null,
+  blog_id text,
+  brand_label text,
+  brand_timezone text,
+  updated_at timestamptz not null default now()
+)`;
+await sql`create table if not exists reel_groups (
+  id serial primary key,
+  user_id text not null,
+  blog_id text not null,
+  label text not null,
+  created_at timestamptz not null default now()
+)`;
+await sql`create table if not exists reel_group_members (
+  user_id text not null,
+  blog_id text not null,
+  reel_id text not null,
+  group_id integer references reel_groups(id) on delete set null,
+  hidden boolean not null default false,
+  primary key (user_id, blog_id, reel_id)
+)`;
+await sql`create table if not exists reel_recommendations (
+  group_id integer primary key references reel_groups(id) on delete cascade,
+  result jsonb not null,
+  reel_ids text[] not null,
+  created_at timestamptz not null default now()
+)`;
+
 // The markdown file is the source of truth: add new hooks, update moved ones, drop removed ones.
 const hooks = readMasterlist();
 const texts = hooks.map((h) => h.text);
