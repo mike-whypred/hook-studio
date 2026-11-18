@@ -346,7 +346,7 @@ const TR={
  mot:{t:"Slow camera move: style",scope:"open",vals:["out","in","breathe","drift"],lab:v=>MOTL[v],d:"Zoom out starts tight. Zoom in pushes closer. Breathe pushes in then back. Drift pans sideways."},
  cut:{t:"Cut the very beginning",scope:"open",vals:[.3,.5,.8],lab:v=>v+"s",d:"Trims a moment off the start."}};
 const MOTL={out:"Slow zoom out",in:"Slow zoom in",breathe:"Breathe in and out",drift:"Slow drift"};
-const NOTYET=["Change the song","New start clip","B-roll","Overlay","Sticker"];
+const NOTYET=["New start clip","B-roll","Overlay","Sticker"];
 const P={pos:new Set(),fonts:new Set(),speed:new Set([.95,1.05,1.1]),bright:new Set([3,5]),zoom:new Set([1.2,1.3]),mot:new Set(["out","in"]),cut:new Set(),mirror:"mix"};
 P.colors=new Set(["white","outline"]);P.groups=new Set(["clean"]);
 const LSK="hookstudio.v2";
@@ -375,8 +375,52 @@ function assign(keepStyles=true){saveP();
     best=arr;if(keys.size==n)break;
   }
   S.cfg=shuffAnim(best);
-  assignOpens();
+  assignMusic();assignOpens();
 }
+
+/* ---------- music: a different song, or a different part of one, under each version ---------- */
+// Instagram compares the sound when it looks for copies, so changing it matters more than any picture trick.
+const MUSIC=[];let musicId=0;
+if(S.mlevel==null)S.mlevel=20;if(S.pitch==null)S.pitch=true;
+async function decodeTrack(m){if(!m.buf)m.buf=await new OfflineAudioContext(2,1,44100).decodeAudioData(await m.blob.arrayBuffer());return m.buf}
+function musicName(id){const m=MUSIC.find(x=>x.id==id);return m?m.name.replace(/\.[^.]+$/,""):""}
+function assignMusic(){const n=S.cfg.length;if(!n)return;const t=spread(MUSIC.map(m=>m.id),n,null);
+  S.cfg.forEach((c,i)=>{c.track=t[i];c.mo=+(Math.random()*.6).toFixed(3)})} // mo: how far into the song this version starts
+function saveMusic(){idbSet("music",MUSIC.map(({id,name,blob})=>({id,name,blob})))}
+async function loadMusic(){const m=await idbGet("music");if(!Array.isArray(m))return;
+  m.forEach(x=>{if(x&&x.blob){MUSIC.push({id:x.id,name:x.name,blob:x.blob});musicId=Math.max(musicId,x.id)}})}
+function setPitch(v,c){const keep=!(S.pitch&&c.speed!=1);v.preservesPitch=keep;v.mozPreservesPitch=keep;v.webkitPreservesPitch=keep}
+function musicNote(){const n=MUSIC.length;if(!n)return "No songs yet. Every version keeps only the original sound.";
+  return n==1?"1 song. Each version starts at a different part of it. Add more for bigger differences.":n+" songs. Versions take turns, each starting at a different part."}
+function drawMusicList(){const box=$("#musicList");if(!box)return;box.innerHTML="";
+  MUSIC.forEach(m=>{const b=document.createElement("button");b.className="chip";b.textContent=musicName(m.id)+" ✕";b.setAttribute("aria-label","Remove "+musicName(m.id));
+    b.addEventListener("click",()=>{MUSIC.splice(MUSIC.indexOf(m),1);saveMusic();assignMusic();drawMusicList();render3()});box.appendChild(b)});
+  const st=$("#musicStat");if(st)st.textContent=musicNote()}
+function buildMusic(tb){
+  const w=document.createElement("div");w.className="trick";
+  w.innerHTML=`<header><strong>Music under the voice</strong><span class="tag whole">whole video</span></header><small>Add 2 to 5 songs you have the rights to use. Each version gets a different song, or a different part of one, mixed quietly under the original sound. Instagram compares the sound when it checks for copies, so this does more than any picture trick.</small>
+<div class="row"><input id="musicFile" type="file" accept="audio/*" multiple aria-label="Add songs"></div>
+<p class="note" id="musicStat" aria-live="polite"></p>
+<div class="chips" id="musicList" style="margin-top:8px"></div>
+<div class="row" style="margin-top:10px"><label for="mlevel" style="width:110px">Music volume</label><input id="mlevel" type="range" min="5" max="60" value="${S.mlevel}"><output id="mlout" style="width:48px;text-align:right">${S.mlevel}%</output></div>
+<label class="row" style="gap:8px;margin-top:8px"><input id="pitch" type="checkbox" ${S.pitch?"checked":""} style="accent-color:var(--accent)"> Let the voice pitch follow the speed, so a faster version sounds slightly higher</label>`;
+  tb.appendChild(w);drawMusicList();
+  w.querySelector("#musicFile").addEventListener("change",async e=>{const files=[...e.target.files];e.target.value="";const st=$("#musicStat"),bad=[];
+    for(const f of files){if(MUSIC.length>=8)break;const m={id:++musicId,name:f.name,blob:f};
+      st.textContent="Reading "+f.name+"…";try{await decodeTrack(m);MUSIC.push(m)}catch{bad.push(f.name)}}
+    saveMusic();assignMusic();drawMusicList();render3();
+    if(bad.length)st.textContent="Couldn't read "+bad.join(", ")+". Try an MP3 or M4A file. "+musicNote()});
+  w.querySelector("#mlevel").addEventListener("input",e=>{S.mlevel=+e.target.value;$("#mlout").textContent=S.mlevel+"%"});
+  w.querySelector("#pitch").addEventListener("change",e=>{S.pitch=e.target.checked});
+}
+
+/* ---------- openings already used for this video, so a later batch doesn't repeat one ---------- */
+const OPK="hookstudio.opens.v1";
+function vidKey(){const d=vid&&vid.duration;return S.fileName&&isFinite(d)?S.fileName+"|"+d.toFixed(1):null}
+function usedOpens(){const k=vidKey();if(!k)return [];try{return JSON.parse(localStorage.getItem(OPK)||"{}")[k]||[]}catch{return []}}
+function rememberOpen(c){const k=vidKey();if(!k)return;
+  try{const all=JSON.parse(localStorage.getItem(OPK)||"{}"),l=all[k]||[],t=c.open?c.open.t0:+(c.cut||0);
+    if(!l.some(x=>Math.abs(x-t)<.3))l.push(+t.toFixed(2));all[k]=l.slice(-60);localStorage.setItem(OPK,JSON.stringify(all))}catch{/* storage full or blocked */}}
 
 /* ---------- clips: find the cuts, then open each version on a different clip ---------- */
 let clipsBusy=false;
@@ -417,9 +461,12 @@ function assignOpens(){
   let pool=S.clips.map((c,i)=>({...c,i})).filter(c=>c.i>0&&c.t1-c.t0>=.7);
   if(!pool.length)pool=S.clips.map((c,i)=>({...c,i})).filter(c=>c.i>0);
   pool.sort((a,b)=>b.lum-a.lum);
-  const cand=shuf(pool.slice(0,Math.max(n,Math.ceil(pool.length*.6))));
+  const used=usedOpens(),isUsed=k=>used.some(t=>t>=k.t0-.3&&t<k.t1);
+  const top=pool.slice(0,Math.max(n,Math.ceil(pool.length*.6))),rest=pool.slice(top.length),old=pool.filter(isUsed);
+  const cand=[...shuf(top.filter(k=>!isUsed(k))),...shuf(rest.filter(k=>!isUsed(k))),...shuf(old).map(k=>({...k,old:true}))];
+  S.skippedOpens=old.length;S.reusedOpens=Math.max(0,n-(cand.length-old.length));
   S.cfg.forEach((c,i)=>{const k=cand[i%cand.length],lap=Math.floor(i/cand.length);
-    const t0=Math.min(k.t0+lap*.4,Math.max(k.t0,k.t1-.7)),rem=k.t1-t0-.12,len=Math.max(.4,Math.min(Math.max(fl,.6),2,rem));
+    const t0=Math.min(k.t0+(lap+(k.old?1:0))*.4,Math.max(k.t0,k.t1-.7)),rem=k.t1-t0-.12,len=Math.max(.4,Math.min(Math.max(fl,.6),2,rem));
     c.open={clip:k.i,t0:+t0.toFixed(2),len:+len.toFixed(2)}});
 }
 function clipNote(){
@@ -428,7 +475,8 @@ function clipNote(){
   if(!S.videoURL)return "Add your video in step 1 and I will find the clips so each version can open on a different one.";
   if(!S.clips)return "";
   if(S.clips.length<2)return "This looks like one continuous shot, so there is no other clip to open on.";
-  return `Found ${S.clips.length} clips. Each version opens on a different one, picked from the brighter clips. The rest of the video stays as filmed.`;
+  return `Found ${S.clips.length} clips. Each version opens on a different one, picked from the brighter clips. The rest of the video stays as filmed.`
+    +(S.skippedOpens?` Openings you've already used for this video go last${S.reusedOpens?`, but ${S.reusedOpens} version${S.reusedOpens>1?"s":""} still reuse one (starting a little later) because there aren't enough new clips`:""}.`:"");
 }
 function shuffAnim(a){return a}
 
@@ -465,6 +513,7 @@ function setup3(){
   m.innerHTML=`<header><strong>Mirror video</strong><span class="tag whole">whole video</span></header><small>Flips the picture. The text stays readable.</small><div class="chips" id="tr_mirror"></div>`;tb.appendChild(m);
   [["Off","off"],["Some versions","mix"],["Every version","all"]].forEach(([l,v])=>{const b=document.createElement("button");b.className="chip";b.textContent=l;b.dataset.v=v;b.setAttribute("aria-pressed",P.mirror==v);
     b.addEventListener("click",()=>{P.mirror=v;m.querySelectorAll(".chip").forEach(x=>x.setAttribute("aria-pressed",x.dataset.v==v));assign(true);render3()});m.querySelector(".chips").appendChild(b)});
+  buildMusic(tb);
   const nt=document.createElement("div");nt.className="trick off";nt.innerHTML=`<header><strong>Not in the app yet</strong></header><small>${NOTYET.join(", ")}. Coming soon.</small>`;tb.appendChild(nt);
   s3built=true;
   if(S.order=="shuffle"&&S.videoURL&&!S.clips&&!clipsBusy)analyzeClips().then(()=>render3());
@@ -494,8 +543,8 @@ function render3(){
     x.save();x.translate(-27,0);x.scale(.55,.55);x.drawImage(bgFrame(1080,480,235),0,0);drawHook(x,+b.dataset.id,L.length?L:["your hook here"],c.font,40,Math.min(S.size/100,1),c.color);x.restore()});
   $("#sout").textContent=S.size+"%";
   $("#durnote").textContent=S.dur=="whole"?"The text stays on screen for the whole video.":"The text is on screen from the first frame and leaves after about 3 seconds. It never fades in.";
-  $("#plan").innerHTML=`<thead><tr><th>#</th><th>Look</th><th>Colour</th><th>Font</th><th>Height</th><th>Speed</th><th>Bright</th><th>Mirror</th><th>Zoom</th><th>Cut</th><th>Opens on</th></tr></thead><tbody>`+
-   S.cfg.map((v,i)=>`<tr data-i="${i}" ${i==S.cur?'class="cur"':""}><td>${i+1}</td><td>${styleName(v.style)}</td><td>${v.style>=13||v.style==11||v.style==12?(v.style>=13?COLORS[v.color||"white"][0]:(v.style==12?"White, black outline":"White")):"own"}</td><td>${v.style>=13?"in the look":FONTS[v.font||STYLE_FONT[v.style]].n}</td><td>${v.y}</td><td>${v.speed}x</td><td>${fmtBright(v.bright)}</td><td>${v.mirror?"yes":"no"}</td><td>${v.zoom>1?(MOTL[v.mot||"out"]||"Slow zoom out")+" "+v.zoom+"x":"none"}</td><td>${v.cut?v.cut+"s":"none"}</td><td>${v.open?"clip "+(v.open.clip+1)+" ("+v.open.t0+"s)":"first clip"}</td></tr>`).join("")+"</tbody>";
+  $("#plan").innerHTML=`<thead><tr><th>#</th><th>Look</th><th>Colour</th><th>Font</th><th>Height</th><th>Speed</th><th>Bright</th><th>Mirror</th><th>Zoom</th><th>Cut</th><th>Music</th><th>Opens on</th></tr></thead><tbody>`+
+   S.cfg.map((v,i)=>`<tr data-i="${i}" ${i==S.cur?'class="cur"':""}><td>${i+1}</td><td>${styleName(v.style)}</td><td>${v.style>=13||v.style==11||v.style==12?(v.style>=13?COLORS[v.color||"white"][0]:(v.style==12?"White, black outline":"White")):"own"}</td><td>${v.style>=13?"in the look":FONTS[v.font||STYLE_FONT[v.style]].n}</td><td>${v.y}</td><td>${v.speed}x</td><td>${fmtBright(v.bright)}</td><td>${v.mirror?"yes":"no"}</td><td>${v.zoom>1?(MOTL[v.mot||"out"]||"Slow zoom out")+" "+v.zoom+"x":"none"}</td><td>${v.cut?v.cut+"s":"none"}</td><td>${v.track?esc(musicName(v.track)):"none"}</td><td>${v.open?"clip "+(v.open.clip+1)+" ("+v.open.t0+"s)":"first clip"}</td></tr>`).join("")+"</tbody>";
   document.querySelectorAll("#plan tbody tr").forEach(r=>r.addEventListener("click",()=>{S.cur=+r.dataset.i;render3()}));
   $("#clipstat").textContent=clipNote();
   $("#makeAll").disabled=!S.videoURL||!S.picked.length;
@@ -576,24 +625,31 @@ async function makeOne(i){
     if(c.open){v2=document.createElement("video");v2.src=S.videoURL;v2.muted=true;v2.playsInline=true;v2.preload="auto";await once(v2,"loadeddata")}
     const src=el=>{if(v2&&el>=c.open.len&&!v2.paused)v2.pause();return v2&&el<c.open.len?v2:v};
     const stream=cv.captureStream(30);
-    try{ac=new (window.AudioContext||window.webkitAudioContext)();await ac.resume();const src=ac.createMediaElementSource(v),dst=ac.createMediaStreamDestination();src.connect(dst);dst.stream.getAudioTracks().forEach(t=>stream.addTrack(t))}catch(e){}
+    let mus=null,mg=null;
+    try{ac=new (window.AudioContext||window.webkitAudioContext)();await ac.resume();const src=ac.createMediaElementSource(v),dst=ac.createMediaStreamDestination();src.connect(dst);
+      try{const tr=c.track&&MUSIC.find(m=>m.id==c.track);if(tr){mus=ac.createBufferSource();mus.buffer=await decodeTrack(tr);mg=ac.createGain();mg.gain.value=0;mus.connect(mg);mg.connect(dst)}}catch{mus=null}
+      dst.stream.getAudioTracks().forEach(t=>stream.addTrack(t))}catch(e){}
     const rec=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:9e6,audioBitsPerSecond:160000}),chunks=[];
     rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data)};
     const stopped=new Promise(r=>rec.onstop=r);
     if(v2){v2.playbackRate=c.speed;v2.currentTime=c.open.t0;await once(v2,"seeked")}
-    v.playbackRate=c.speed;v.currentTime=c.cut||0;await once(v,"seeked");
+    setPitch(v,c);v.playbackRate=c.speed;v.currentTime=c.cut||0;await once(v,"seeked");
     composeFrame(x,src(0),c,layer,0,true);rec.start(250);
     const ended=new Promise(r=>v.addEventListener("ended",r,{once:true}));
+    if(mus){const b=mus.buffer,len=(v.duration-(c.cut||0))/c.speed,room=b.duration-len,t=ac.currentTime;
+      mus.loop=room<0;mg.gain.setValueAtTime(0,t);mg.gain.linearRampToValueAtTime(S.mlevel/100,t+.8);
+      mus.start(t,room>0?(c.mo||0)*room:((c.mo||0)*b.duration)%b.duration)}
     await Promise.all([v.play(),v2?v2.play():0]);
     const dur=v.duration-(c.cut||0);
     await new Promise(res=>{const tick=()=>{if(stopFlag||v.ended){res();return}
       const el=v.currentTime-(c.cut||0);composeFrame(x,src(el),c,layer,el,true);R[i].pct=Math.min(99,Math.round(el/dur*100));drawResults(true);requestAnimationFrame(tick)};tick()});
     composeFrame(x,v,c,layer,dur,true);
+    if(mg)mg.gain.setTargetAtTime(0,ac.currentTime,.08);
     await new Promise(r=>setTimeout(r,250));rec.stop();await stopped;
     if(stopFlag){R[i]={status:"stopped"};return}
     const blob=new Blob(chunks,{type:mime.split(";")[0]});
     R[i]={status:"done",blob,url:URL.createObjectURL(blob),name:fileName(i)+(mime.startsWith("video/mp4")?".mp4":".webm"),mp4:mime.startsWith("video/mp4"),size:blob.size};
-    idbSet("r"+i,{blob:R[i].blob,name:R[i].name,mp4:R[i].mp4,size:R[i].size});
+    idbSet("r"+i,{blob:R[i].blob,name:R[i].name,mp4:R[i].mp4,size:R[i].size});rememberOpen(c);
   }catch(e){R[i]={status:"error",msg:"That version didn't record. Press Make again."}}
   finally{v.pause();if(v2)v2.pause();if(ac)ac.close().catch(()=>0)}
 }
@@ -614,7 +670,7 @@ function drawResults(light){
     else if(r.status=="done")mid=`<video src="${r.url}" controls playsinline muted style="width:110px;border-radius:8px"></video><span class="note" style="margin:0">${(r.size/1048576).toFixed(1)} MB${r.mp4?"":" · WebM, not MP4"}</span><button class="btn" data-save="${i}">Save</button>`;
     else if(r.status=="error")mid=`<span class="err">${r.msg}</span>`;
     else if(r.status=="stopped")mid=`<span class="note" style="margin:0">Stopped</span>`;
-    row.innerHTML=`<strong>Version ${i+1}</strong><span class="note" style="margin:0">${styleName(S.cfg[i].style)}, ${S.cfg[i].speed}x</span>${mid}<button class="btn ghost" data-make="${i}" ${making?"disabled":""}>${r.status=="done"?"Make again":"Make this one"}</button>`;
+    row.innerHTML=`<strong>Version ${i+1}</strong><span class="note" style="margin:0">${styleName(S.cfg[i].style)}, ${S.cfg[i].speed}x${S.cfg[i].track?", "+esc(musicName(S.cfg[i].track)):""}</span>${mid}<button class="btn ghost" data-make="${i}" ${making?"disabled":""}>${r.status=="done"?"Make again":"Make this one"}</button>`;
     box.appendChild(row)});
   box.querySelectorAll("[data-make]").forEach(b=>b.addEventListener("click",()=>{if(S.videoURL)makeAll(+b.dataset.make);else $("#mkstat").textContent="Add your video in step 1 first."}));
   box.querySelectorAll("[data-save]").forEach(b=>b.addEventListener("click",async()=>{const i=+b.dataset.save,r=R[i];
@@ -826,7 +882,7 @@ async function copyText(t,btn){
   catch(e){const r=document.createRange();r.selectNodeContents($("#promptBox"));const s=getSelection();s.removeAllRanges();s.addRange(r)}}
 
 stepper();go(1);
-(async()=>{try{if(await restoreSession()){stepper();go(S.step)}}catch(e){}ready=true;saveNow()})();
+(async()=>{try{await loadMusic()}catch{/* no saved songs */}try{if(await restoreSession()){stepper();go(S.step)}}catch(e){}ready=true;saveNow()})();
 loadFonts().then(()=>{_fc=null;render3()});
 (async()=>{try{sampleFn=await claude.use("sample")}catch(e){sampleFn=null}try{dl=await claude.use("downloads")}catch(e){dl=null}})();
 
