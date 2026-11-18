@@ -882,7 +882,19 @@ async function copyText(t,btn){
   catch(e){const r=document.createRange();r.selectNodeContents($("#promptBox"));const s=getSelection();s.removeAllRanges();s.addRange(r)}}
 
 stepper();go(1);
-(async()=>{try{await loadMusic()}catch{/* no saved songs */}try{if(await restoreSession()){stepper();go(S.step)}}catch(e){}ready=true;saveNow()})();
+/* ---------- remake: new hooks sent over from the Analyse tab ---------- */
+function applyRemake(){let r=null;try{r=JSON.parse(localStorage.getItem("hookstudio.remake")||"null");localStorage.removeItem("hookstudio.remake")}catch{/* nothing sent */}
+  if(!r||!Array.isArray(r.hooks)||!r.hooks.length||Date.now()-(+r.at||0)>3600e3)return false;
+  if(r.description){S.desc=String(r.description);$("#desc").value=S.desc}
+  (r.avoid||[]).forEach(x=>rejected.push(String(x)));
+  S.hooks=S.hooks.filter(h=>h.own);S.picked=[];S.cfg=[];
+  addHooks(r.hooks.map(String),false);go(2);renderHooks();
+  const tips=(r.notes||[]).map(String).filter(Boolean);
+  $("#gstat").className="note";
+  $("#gstat").textContent=`Loaded ${r.hooks.length} new hooks from Analyse for "${r.label||"your video"}". Tick the ones you want.`
+    +" Check step 1 has that same video before you make versions."+(tips.length?" Tips: "+tips.join(" · "):"");
+  return true}
+(async()=>{try{await loadMusic()}catch{/* no saved songs */}try{if(await restoreSession()){stepper();go(S.step)}}catch(e){}try{applyRemake()}catch{/* bad payload */}ready=true;saveNow()})();
 loadFonts().then(()=>{_fc=null;render3()});
 (async()=>{try{sampleFn=await claude.use("sample")}catch(e){sampleFn=null}try{dl=await claude.use("downloads")}catch(e){dl=null}})();
 
